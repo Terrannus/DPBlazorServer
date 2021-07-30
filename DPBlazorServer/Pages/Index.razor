@@ -1,0 +1,102 @@
+﻿@using CsvHelper;
+@using CsvHelper.Configuration;
+@using Microsoft.Extensions.Configuration;
+@using Microsoft.Extensions.DependencyInjection;
+@using Microsoft.Extensions.Logging;
+@using System;
+@using System.IO;
+@using System.Collections.Generic;
+@using System.Net.Http;
+@using System.Text;
+@using System.Threading.Tasks;
+@using CsvHelper.Configuration.Attributes;
+@using System.Globalization;
+
+@page "/"
+
+<h1>Today's duty chemist is @DutyPharmacy(DateTime.Now)</h1>
+
+The Opening Hours for the Pharmacies On Duty Are:
+<p></p>
+<b>Monday – Friday:</b> 7pm-9pm
+<p></p>
+<b>Weekends/Public Holidays:</b> 11am-1pm & 6pm-8pm
+<p></p>
+<a href="https://www.gha.gi/patients-visitors/pharmacies-on-duty-2017/">Learn more about pharmacies on duty</a>
+
+
+
+
+
+@code{
+
+
+    static string DutyPharmacy(DateTime TodaysDate)
+    {
+        try
+        {
+            using (var streamReader = new StreamReader($"{System.IO.Directory.GetCurrentDirectory()}{@"\wwwroot\sample-data\DutyRosterCSV - Copy.csv"}"))
+
+
+            {
+
+
+
+                using (var csvReader = new CsvReader(streamReader, CultureInfo.InvariantCulture))
+                {
+                    csvReader.Context.RegisterClassMap<WeekMap>();
+
+                    var records = csvReader.GetRecords<Week>().ToList();
+                    bool datePast = false;
+                    int i = 0;
+                    while (datePast == false)
+                    {
+                        if (TodaysDate < DateTime.Parse(records[i].EndDate) && TodaysDate >= DateTime.Parse(records[i].StartDate))
+                        {
+                            if (records[i].Pharmacy == "Valmar (Europort)" || records[i].Pharmacy == "Kings Pharmacy")
+                            {
+                                return "Wesley Pharmacy";
+                            }
+                            else
+                            {
+                                return records[i].Pharmacy;
+                            }
+                        }
+                        else
+                        {
+                            i++;
+
+                        }
+
+                    }
+                    return records[0].EndDate;
+                }
+            }
+        }
+        catch(Exception e) {
+
+            Console.WriteLine(e.ToString());
+            return "Error"; }
+
+    }}
+
+@code{
+
+    public class WeekMap : ClassMap<Week>
+    {
+        public WeekMap()
+        {
+            Map(m => m.StartDate).Name("start_date");
+            Map(m => m.EndDate).Name("end_date");
+            Map(m => m.Pharmacy).Name("pharmacy");
+        }
+    }
+
+    public class Week
+    {
+        public string StartDate { get; set; }
+        public string EndDate { get; set; }
+        public string Pharmacy { get; set; }
+
+    }
+}
